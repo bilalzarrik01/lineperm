@@ -2,7 +2,8 @@ package ma.youcode.lineperm.ui;
 
 import ma.youcode.lineperm.models.User;
 import ma.youcode.lineperm.services.UserService;
-
+import ma.youcode.lineperm.models.Fichier;  
+import ma.youcode.lineperm.services.FichierService;
 import java.util.Scanner;
 
 public class ConsoleApp {
@@ -10,13 +11,15 @@ public class ConsoleApp {
     private final Scanner scanner;
     private User utilisateurConnecte = null;
     private boolean actif = true;
-
+    private final FichierService fichierService = new FichierService();
     public ConsoleApp() {
         this.userService = new UserService();
         this.scanner = new Scanner(System.in);
     }
 
     public void demarrer() {
+        fichierService.charger();
+        userService.charger();
         afficherBanniere();
 
         while (actif) {
@@ -70,6 +73,12 @@ public class ConsoleApp {
             case "exit":
                 actif = false;
                 break;
+            case "create":
+                Createfile(mots); 
+                break;  
+                case "ls":
+            fichierService.listerFichiers();
+            break ;
             default:
                 System.out.println("Commande inconnue.");
                 break;
@@ -112,6 +121,24 @@ public class ConsoleApp {
         } else {
             System.out.println("Identifiants incorrects.");
         }
+    }
+    public void Createfile(String[] mots){
+        if (utilisateurConnecte == null) {
+            System.out.println("vous deuvez etre connecter pour creer un fichier ");
+            return ;
+        }
+        if (mots.length <2) {
+            System.out.println("vous deuvez nomee le fichier");
+            return ;
+        }
+        String nomeFichier = mots[1];
+        if (fichierService.creerFichier(nomeFichier , utilisateurConnecte.getLogin())) {
+            System.out.println("le fichier " + nomeFichier + "est bien creer");
+        }
+        else{
+            System.out.println("cette nome deja existe");
+        }
+
     }
 
     private void logout() {

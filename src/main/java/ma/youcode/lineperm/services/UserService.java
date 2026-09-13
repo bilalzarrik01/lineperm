@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.io.IOException;
+
 
 
 
@@ -47,18 +47,28 @@ public void charger(){
    }
 
 }
-    private boolean sauvegarder(){
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
-            for (User u : comptes.values()) {
-                writer.println(u.getLogin()  +":" +u.getPasswordHash());
-            }
-             return true ;
-            
-         } catch (IOException e) {
-            System.err.println("ERR de sauvegarde est : "+e.getMessage());
-            return false ;
+  private boolean sauvegarder() {
+    try {
+        File dir = new File("resources");
+
+        if (!dir.exists()) {
+            dir.mkdirs();
         }
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
+
+            for (User u : comptes.values()) {
+                writer.println(u.getLogin() + ":" + u.getPasswordHash());
+            }
+        }
+
+        return true;
+
+    } catch (IOException e) {
+        System.err.println("Erreur de sauvegarde : " + e.getMessage());
+        return false;
     }
+}
 
 
     public boolean creerCompte(String login, String motDePasse) {
