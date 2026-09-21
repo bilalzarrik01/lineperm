@@ -1,5 +1,6 @@
 package ma.youcode.lineperm.services;
 
+import ma.youcode.lineperm.models.AccessLog;
 import ma.youcode.lineperm.models.Fichier;
 
 import java.io.IOException;
@@ -15,6 +16,7 @@ public class FichierService {
     private Map<String, Fichier> fichiers = new HashMap<>();
     private final String dossier = "resources/text";
     private final Path permFilePath = Paths.get("resources/perm.txt");
+    private final LogAnalyzerService logAnalyzerService = new LogAnalyzerService();
 
     public FichierService() {
         try {
@@ -77,6 +79,9 @@ public class FichierService {
             
             sauvegarderPermissions();
 
+            // Enregistrer log
+            logAnalyzerService.sauvegarderLog(new AccessLog(owner, "WRITE", fileName, "AUTORISE"));
+
             return true;
         } catch (IOException e) {
             System.out.println("Erreur de creation : " + e.getMessage());
@@ -126,6 +131,7 @@ public class FichierService {
 
         if (!f.getOwner().equals(userConnecte)) {
             System.out.println("Permission refusee : Seul le proprietaire peut modifier les permissions.");
+            logAnalyzerService.sauvegarderLog(new AccessLog(userConnecte, "CHMOD", fileName, "REFUSE"));
             return false;
         }
 
@@ -134,6 +140,7 @@ public class FichierService {
         f.setOtherDelete(delete);
         
         sauvegarderPermissions();
+        logAnalyzerService.sauvegarderLog(new AccessLog(userConnecte, "CHMOD", fileName, "AUTORISE"));
         
         System.out.println("Permissions meises a jour pour : " + fileName);
         return true;
@@ -166,6 +173,7 @@ public class FichierService {
         boolean estOwner = f.getOwner().equals(userConnecte);
         if (!estOwner && !f.isOtherDelete()) {
             System.out.println("Permission refusee : vous n'avez pas le droit de supprimer.");
+            logAnalyzerService.sauvegarderLog(new AccessLog(userConnecte, "DELETE", fileName, "REFUSE"));
             return false;
         }
 
@@ -175,6 +183,7 @@ public class FichierService {
             fichiers.remove(fileName);
             
             sauvegarderPermissions();
+            logAnalyzerService.sauvegarderLog(new AccessLog(userConnecte, "DELETE", fileName, "AUTORISE"));
             
             return true;
         } catch (IOException e) {
@@ -194,6 +203,7 @@ public class FichierService {
 
         if (!estOwner && !f.isOtherRead()) {
             System.out.println("Permission refusee : vous n'avez pas le droit de lire ce fichier.");
+            logAnalyzerService.sauvegarderLog(new AccessLog(userConnecte, "READ", fileName, "REFUSE"));
             return;
         }
 
@@ -205,6 +215,7 @@ public class FichierService {
                 for (String line : lines) {
                     System.out.println(line);
                 }
+                logAnalyzerService.sauvegarderLog(new AccessLog(userConnecte, "READ", fileName, "AUTORISE"));
             } else {
                 System.out.println("Le fichier est vide ou n'existe pas sur le disque.");
             }
@@ -224,6 +235,7 @@ public class FichierService {
 
         if (!estOwner && !f.isOtherWrite()) {
             System.out.println("Permission refusee : vous n'avez pas le droit de modifier ce fichier.");
+            logAnalyzerService.sauvegarderLog(new AccessLog(userConnecte, "WRITE", fileName, "REFUSE"));
             return;
         }
 
@@ -231,6 +243,7 @@ public class FichierService {
             Path path = Paths.get(dossier, fileName);
             Files.writeString(path, texte);
             System.out.println("Fichier " + fileName + " modifie avec succes.");
+            logAnalyzerService.sauvegarderLog(new AccessLog(userConnecte, "WRITE", fileName, "AUTORISE"));
         } catch (IOException e) {
             System.out.println("Erreur d'ecriture : " + e.getMessage());
         }

@@ -1,8 +1,14 @@
 package ma.youcode.lineperm.ui;
 
+import ma.youcode.lineperm.models.AccessLog;
 import ma.youcode.lineperm.models.User;
-import ma.youcode.lineperm.services.UserService;
 import ma.youcode.lineperm.services.FichierService;
+import ma.youcode.lineperm.services.LogAnalyzerService;
+import ma.youcode.lineperm.services.UserService;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class ConsoleApp {
@@ -11,6 +17,7 @@ public class ConsoleApp {
     private User utilisateurConnecte = null;
     private boolean actif = true;
     private final FichierService fichierService = new FichierService();
+    private final LogAnalyzerService logAnalyzerService = new LogAnalyzerService();
 
     public ConsoleApp() {
         this.userService = new UserService();
@@ -18,6 +25,7 @@ public class ConsoleApp {
     }
 
     public void demarrer() {
+        logAnalyzerService.chargerLogs();
         fichierService.afficherPerm(null);
         fichierService.charger();
         userService.charger();
@@ -77,9 +85,10 @@ public class ConsoleApp {
                 break;
             case "ls":
                 fichierService.listerFichiers();
+                break;
             case "showperm":
                 if (mots.length < 2) {
-                    System.out.println("Usage: showperm ");
+                    System.out.println("Usage: showperm <filename>");
                 } else {
                     fichierService.afficherPerm(mots[1]);
                 }
@@ -89,7 +98,7 @@ public class ConsoleApp {
                 if (mots.length < 2)
                     System.out.println("Usage: cat <filename>");
                 else
-                    fichierService.lireFichier(mots[1], utilisateurConnecte.getLogin());
+                    fichierService.lireFichier(mots[1], utilisateurConnecte != null ? utilisateurConnecte.getLogin() : null);
                 break;
 
             case "nano":
@@ -99,7 +108,7 @@ public class ConsoleApp {
                     StringBuilder texte = new StringBuilder();
                     for (int i = 2; i < mots.length; i++)
                         texte.append(mots[i]).append(" ");
-                    fichierService.ecrireFichier(mots[1], utilisateurConnecte.getLogin(), texte.toString().trim());
+                    fichierService.ecrireFichier(mots[1], utilisateurConnecte != null ? utilisateurConnecte.getLogin() : null, texte.toString().trim());
                 }
                 break;
 
@@ -107,7 +116,7 @@ public class ConsoleApp {
                 if (utilisateurConnecte == null) {
                     System.out.println("Erreur: Vous devez etre connecte pour supprimer un fichier.");
                 } else if (mots.length < 2) {
-                    System.out.println("Usage: rm ");
+                    System.out.println("Usage: rm <filename>");
                 } else {
                     if (fichierService.supprimerFichier(mots[1], utilisateurConnecte.getLogin())) {
                         System.out.println("Fichier supprime avec succes.");
@@ -118,7 +127,7 @@ public class ConsoleApp {
                 if (utilisateurConnecte == null) {
                     System.out.println("Erreur: Vous devez etre connecte.");
                 } else if (mots.length < 5) {
-                    System.out.println("Usage: chmod    ");
+                    System.out.println("Usage: chmod <filename> <read> <write> <delete>");
                 } else {
                     boolean r = Boolean.parseBoolean(mots[2]);
                     boolean w = Boolean.parseBoolean(mots[3]);
@@ -127,9 +136,83 @@ public class ConsoleApp {
                 }
                 break;
 
+            case "stats":
+                afficherMenuStats();
+                break;
+
             default:
                 System.out.println("Commande inconnue.");
                 break;
+        }
+    }
+
+    private void afficherMenuStats() {
+        logAnalyzerService.chargerLogs();
+        boolean retour = false;
+
+        System.out.println("Bienvenue dans LogAnalyzer. Choisissez une statistique par son numero.");
+
+        while (!retour) {
+            System.out.println("\n=== LogAnalyzer ===");
+            System.out.println("1) Nombre total d'actions");
+            System.out.println("2) Nombre d'acces mefuses");
+            System.out.println("3) Utilisateurs distincts");
+            System.out.println("4) Actions par utilisateur");
+            System.out.println("5) Top 3 des fichiers consultes");
+            System.out.println("6) Acces mefuses d'un utilisateur");
+            System.out.println("7) Utilisateur le plus actif");
+            System.out.println("8) Repartition des actions par type");
+            System.out.println("0) Quitter");
+            System.out.print("Choix: ");
+
+            String input = scanner.nextLine().trim();
+
+            switch (input) {
+                case "1":
+                    System.out.println("Nombre total d'actions: " + logAnalyzerService.getTotalActions());
+                    break;
+                case "2":
+                    System.out.println("Acces mefuses: " + logAnalyzerService.getNombreAccesRefuses());
+                    break;
+                case "3":
+                    System.out.println("Utilisateurs distincts: " + logAnalyzerService.getUtilisateursDistincts());
+                    break;
+                case "4":
+                    System.out.println("Actions par utilisateur: " + logAnalyzerService.getActionsParUtilisateur());
+                    break;
+                case "5":
+                    System.out.println("Top 3 des fichiers consultes:");
+                    logAnalyzerService.getTop3FichiersConsultes().forEach(e ->
+                            System.out.println("- " + e.getKey() + " : " + e.getValue() + " acces")
+                    );
+                    break;
+                case "6":
+                    System.out.print("Entrez le nom d'utilisateur: ");
+                    String user = scanner.nextLine().trim();
+                    List<AccessLog> refus = logAnalyzerService.getAccesRefusesParUtilisateur(user);
+                    if (refus.isEmpty()) {
+                        System.out.println("Aucun acces mefuse trouve pour " + user);
+                    } else {
+                        refus.forEach(log -> System.out.println(log));
+                    }
+                    break;
+                case "7":
+                    Optional<Map.Entry<String, Long>> plusActif = logAnalyzerService.getUtilisateurLePlusActif();
+                    if (plusActif.isPresent()) {
+                        System.out.println("Utilisateur le plus actif: " + plusActif.get().getKey() + " (" + plusActif.get().getValue() + " actions)");
+                    } else {
+                        System.out.println("Aucune donnee disponible.");
+                    }
+                    break;
+                case "8":
+                    System.out.println("Repartition des actions par type: " + logAnalyzerService.getRepartitionActionsParType());
+                    break;
+                case "0":
+                    retour = true;
+                    break;
+                default:
+                    System.out.println("Choix invalide.");
+            }
         }
     }
 
@@ -173,21 +256,20 @@ public class ConsoleApp {
 
     public void Createfile(String[] mots) {
         if (utilisateurConnecte == null) {
-            System.out.println("vous deuvez etre connecter pour creer un fichier ");
+            System.out.println("Vous devez etre connecte pour creer un fichier.");
             return;
         }
         if (mots.length < 2) {
-            System.out.println("vous deuvez nomee le fichier");
+            System.out.println("Vous devez nommer le fichier.");
             return;
         }
 
         String nomeFichier = mots[1];
         if (fichierService.creerFichier(nomeFichier, utilisateurConnecte.getLogin())) {
-            System.out.println("le fichier " + nomeFichier + "est bien creer");
+            System.out.println("Le fichier " + nomeFichier + " est bien cree.");
         } else {
-            System.out.println("cette nome deja existe");
+            System.out.println("Ce nom existe deja.");
         }
-
     }
 
     private void logout() {
@@ -200,6 +282,4 @@ public class ConsoleApp {
         System.out.println("     Bienvenue sur LinePerm      ");
         System.out.println("=================================");
     }
-    
-
 }

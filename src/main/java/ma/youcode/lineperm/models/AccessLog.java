@@ -20,18 +20,32 @@ public class AccessLog {
         this.resultat = resultat;
     }
 
+    public AccessLog(String utilisateur, String action, String fichier, String resultat) {
+        this(LocalDate.now(), LocalTime.now(), utilisateur, action, fichier, resultat);
+    }
+
+    public String toCsvLine() {
+        return date + ";" + heure + ";" + utilisateur + ";" + action + ";" + fichier + ";" + resultat;
+    }
+
     public static AccessLog fromCsvLine(String line) {
+        if (line == null || line.isBlank()) return null;
+
         String[] parts = line.split(";");
         if (parts.length < 6) return null;
-        
-        LocalDate date = LocalDate.parse(parts[0].trim());
-        LocalTime heure = LocalTime.parse(parts[1].trim());
-        String utilisateur = parts[2].trim();
-        String action = parts[3].trim();
-        String fichier = parts[4].trim();
-        String resultat = parts[5].trim();
 
-        return new AccessLog(date, heure, utilisateur, action, fichier, resultat);
+        try {
+            LocalDate date = LocalDate.parse(parts[0].trim());
+            LocalTime heure = LocalTime.parse(parts[1].trim());
+            String utilisateur = parts[2].trim();
+            String action = parts[3].trim();
+            String fichier = parts[4].trim();
+            String resultat = parts[5].trim();
+
+            return new AccessLog(date, heure, utilisateur, action, fichier, resultat);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public LocalDate getDate() { return date; }

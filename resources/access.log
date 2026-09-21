@@ -1,0 +1,3 @@
+ Un log enregistre un accès : qui (utilisateur), quel fichier, quelle action, quel 
+résultat, et quand. 16:18:51.533403900;bilal;READ;b;AUTORISE
+2026-09-21;17:19:04.035634500;bilal;READ;b;AUTORISE
