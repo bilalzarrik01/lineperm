@@ -2,7 +2,6 @@ package ma.youcode.lineperm.ui;
 
 import ma.youcode.lineperm.models.User;
 import ma.youcode.lineperm.services.UserService;
-import ma.youcode.lineperm.models.Fichier;  
 import ma.youcode.lineperm.services.FichierService;
 import java.util.Scanner;
 
@@ -12,16 +11,17 @@ public class ConsoleApp {
     private User utilisateurConnecte = null;
     private boolean actif = true;
     private final FichierService fichierService = new FichierService();
+
     public ConsoleApp() {
         this.userService = new UserService();
         this.scanner = new Scanner(System.in);
     }
 
     public void demarrer() {
+        fichierService.afficherPerm(null);
         fichierService.charger();
         userService.charger();
         afficherBanniere();
-
         while (actif) {
             String ligne = lireLigne(prompt());
             traiter(ligne);
@@ -49,7 +49,6 @@ public class ConsoleApp {
         String[] mots = nettoyee.split("\\s+");
         String commande = mots[0].toLowerCase();
 
-        
         if (utilisateurConnecte == null && commande.equals("logout")) {
             System.out.println("Vous devez etre connecte pour executer cette commande.");
             return;
@@ -73,12 +72,61 @@ public class ConsoleApp {
             case "exit":
                 actif = false;
                 break;
-            case "create":
-                Createfile(mots); 
-                break;  
-                case "ls":
-            fichierService.listerFichiers();
-            break ;
+            case "touch":
+                Createfile(mots);
+                break;
+            case "ls":
+                fichierService.listerFichiers();
+            case "showperm":
+                if (mots.length < 2) {
+                    System.out.println("Usage: showperm ");
+                } else {
+                    fichierService.afficherPerm(mots[1]);
+                }
+                break;
+
+            case "cat":
+                if (mots.length < 2)
+                    System.out.println("Usage: cat <filename>");
+                else
+                    fichierService.lireFichier(mots[1], utilisateurConnecte.getLogin());
+                break;
+
+            case "nano":
+                if (mots.length < 3)
+                    System.out.println("Usage: nano <filename> <texte>");
+                else {
+                    StringBuilder texte = new StringBuilder();
+                    for (int i = 2; i < mots.length; i++)
+                        texte.append(mots[i]).append(" ");
+                    fichierService.ecrireFichier(mots[1], utilisateurConnecte.getLogin(), texte.toString().trim());
+                }
+                break;
+
+            case "rm":
+                if (utilisateurConnecte == null) {
+                    System.out.println("Erreur: Vous devez etre connecte pour supprimer un fichier.");
+                } else if (mots.length < 2) {
+                    System.out.println("Usage: rm ");
+                } else {
+                    if (fichierService.supprimerFichier(mots[1], utilisateurConnecte.getLogin())) {
+                        System.out.println("Fichier supprime avec succes.");
+                    }
+                }
+                break;
+            case "chmod":
+                if (utilisateurConnecte == null) {
+                    System.out.println("Erreur: Vous devez etre connecte.");
+                } else if (mots.length < 5) {
+                    System.out.println("Usage: chmod    ");
+                } else {
+                    boolean r = Boolean.parseBoolean(mots[2]);
+                    boolean w = Boolean.parseBoolean(mots[3]);
+                    boolean d = Boolean.parseBoolean(mots[4]);
+                    fichierService.modifierPerm(mots[1], utilisateurConnecte.getLogin(), r, w, d);
+                }
+                break;
+
             default:
                 System.out.println("Commande inconnue.");
                 break;
@@ -122,20 +170,21 @@ public class ConsoleApp {
             System.out.println("Identifiants incorrects.");
         }
     }
-    public void Createfile(String[] mots){
+
+    public void Createfile(String[] mots) {
         if (utilisateurConnecte == null) {
             System.out.println("vous deuvez etre connecter pour creer un fichier ");
-            return ;
+            return;
         }
-        if (mots.length <2) {
+        if (mots.length < 2) {
             System.out.println("vous deuvez nomee le fichier");
-            return ;
+            return;
         }
+
         String nomeFichier = mots[1];
-        if (fichierService.creerFichier(nomeFichier , utilisateurConnecte.getLogin())) {
+        if (fichierService.creerFichier(nomeFichier, utilisateurConnecte.getLogin())) {
             System.out.println("le fichier " + nomeFichier + "est bien creer");
-        }
-        else{
+        } else {
             System.out.println("cette nome deja existe");
         }
 
@@ -151,4 +200,6 @@ public class ConsoleApp {
         System.out.println("     Bienvenue sur LinePerm      ");
         System.out.println("=================================");
     }
+    
+
 }

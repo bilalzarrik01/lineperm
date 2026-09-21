@@ -2,7 +2,6 @@ package ma.youcode.lineperm.services;
 
 import ma.youcode.lineperm.models.User;
 import org.mindrot.jbcrypt.BCrypt;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +18,6 @@ import java.io.PrintWriter;
 public class UserService {
     private final String filePath = "resources/users.txt";
     private final Map<String, User> comptes = new HashMap<>();
-
     public boolean existe(String login) {
         return comptes.containsKey(login);
     }
