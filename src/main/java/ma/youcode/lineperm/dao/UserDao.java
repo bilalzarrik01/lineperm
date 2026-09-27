@@ -49,6 +49,15 @@ public class UserDao extends AbstractDao<User> {
         return Optional.empty();
     }
 
+    public boolean modifierMotDePasse(int userId, String nouveauHash) throws SQLException {
+        String sql = "UPDATE users SET password = ? WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, nouveauHash);
+            statement.setInt(2, userId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
     @Override
     public Optional<User> trouverParId(int id) throws SQLException {
         String sql = "SELECT id, login, password FROM users WHERE id = ?";
