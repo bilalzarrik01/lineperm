@@ -1,8 +1,10 @@
 package ma.youcode.lineperm.models;
 
 public class Fichier {
+    private int id;
     private String name;
     private String owner;
+    private String droits;
     
     private boolean ownerRead;
     private boolean ownerWrite;
@@ -14,12 +16,36 @@ public class Fichier {
 
     public Fichier() {}
 
+    public Fichier(int id, String name, String owner, String droits) {
+        this.id = id;
+        this.name = name;
+        this.owner = owner;
+        this.droits = droits;
+    }
+
     public Fichier(String name, String owner) {
         this.name = name;
         this.owner = owner;
+        this.droits = "READ,WRITE,DELETE";
         this.ownerRead = true;
         this.ownerWrite = true;
         this.ownerDelete = true;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getDroits() {
+        return droits;
+    }
+
+    public void setDroits(String droits) {
+        this.droits = droits;
     }
 
     public String getName() {
